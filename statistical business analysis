@@ -1,0 +1,253 @@
+# =====================================================
+# Statistical Business Analysis Project
+# =====================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from scipy import stats
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+
+# -----------------------------------------------------
+# Load Dataset
+# -----------------------------------------------------
+
+try:
+    df = pd.read_csv("sales_data.csv")
+    print("Dataset Loaded Successfully")
+except Exception as e:
+    print("Error:", e)
+
+print(df.head())
+
+# -----------------------------------------------------
+# Data Cleaning
+# -----------------------------------------------------
+
+print("\nMissing Values")
+print(df.isnull().sum())
+
+df = df.dropna()
+
+# =====================================================
+# DAY 1 : DESCRIPTIVE STATISTICS
+# =====================================================
+
+print("\n==============================")
+print("DESCRIPTIVE STATISTICS")
+print("==============================")
+
+for column in ["Sales","Marketing_Spend","Profit"]:
+    print("\n",column)
+
+    print("Mean :",df[column].mean())
+    print("Median :",df[column].median())
+    print("Mode :",df[column].mode()[0])
+    print("Standard Deviation :",df[column].std())
+    print("Variance :",df[column].var())
+    print("Minimum :",df[column].min())
+    print("Maximum :",df[column].max())
+
+# =====================================================
+# DAY 2 : DATA DISTRIBUTION
+# =====================================================
+
+plt.figure(figsize=(6,4))
+plt.hist(df["Sales"],bins=10)
+plt.title("Sales Distribution")
+plt.xlabel("Sales")
+plt.ylabel("Frequency")
+plt.show()
+
+# Shapiro-Wilk Test
+
+shapiro = stats.shapiro(df["Sales"])
+
+print("\nNormality Test")
+print("Statistic:",shapiro.statistic)
+print("P-value:",shapiro.pvalue)
+
+if shapiro.pvalue > 0.05:
+    print("Sales follows Normal Distribution")
+else:
+    print("Sales NOT Normally Distributed")
+
+# =====================================================
+# DAY 3 : CORRELATION ANALYSIS
+# =====================================================
+
+print("\n==============================")
+print("CORRELATION")
+print("==============================")
+
+corr = df[["Sales","Marketing_Spend","Profit"]].corr()
+
+print(corr)
+
+# Heatmap using matplotlib
+
+fig, ax = plt.subplots(figsize=(6,5))
+
+cax = ax.imshow(corr, interpolation='nearest')
+
+plt.xticks(range(len(corr.columns)),corr.columns)
+plt.yticks(range(len(corr.columns)),corr.columns)
+
+for i in range(len(corr.columns)):
+    for j in range(len(corr.columns)):
+        ax.text(j,i,round(corr.iloc[i,j],2),
+                ha="center",va="center")
+
+plt.title("Correlation Heatmap")
+plt.colorbar(cax)
+plt.show()
+
+pearson = stats.pearsonr(df["Marketing_Spend"],df["Sales"])
+
+print("\nPearson Correlation")
+print("Coefficient:",pearson[0])
+print("P-value:",pearson[1])
+
+# =====================================================
+# DAY 4 : HYPOTHESIS TESTING
+# =====================================================
+
+print("\n==============================")
+print("HYPOTHESIS TESTS")
+print("==============================")
+
+# Hypothesis Test 1
+# One Sample T Test
+
+t1 = stats.ttest_1samp(df["Sales"],45000)
+
+print("\nTest 1")
+print("One Sample T-Test")
+print("t =",t1.statistic)
+print("p =",t1.pvalue)
+
+# Hypothesis Test 2
+# Independent T Test
+
+high = df[df["Marketing_Spend"]>=df["Marketing_Spend"].median()]["Sales"]
+low = df[df["Marketing_Spend"]<df["Marketing_Spend"].median()]["Sales"]
+
+t2 = stats.ttest_ind(high,low)
+
+print("\nTest 2")
+print("Independent T-Test")
+print("t =",t2.statistic)
+print("p =",t2.pvalue)
+
+# Hypothesis Test 3
+# ANOVA
+
+groups = []
+
+for region in df["Region"].unique():
+    groups.append(df[df["Region"]==region]["Sales"])
+
+anova = stats.f_oneway(*groups)
+
+print("\nTest 3")
+print("ANOVA")
+print("F =",anova.statistic)
+print("p =",anova.pvalue)
+
+# =====================================================
+# DAY 5 : CONFIDENCE INTERVAL
+# =====================================================
+
+print("\n==============================")
+print("95% CONFIDENCE INTERVAL")
+print("==============================")
+
+mean = df["Sales"].mean()
+
+sem = stats.sem(df["Sales"])
+
+ci = stats.t.interval(
+    confidence=0.95,
+    df=len(df)-1,
+    loc=mean,
+    scale=sem
+)
+
+margin = (ci[1]-ci[0])/2
+
+print("Mean Sales:",mean)
+print("Confidence Interval:",ci)
+print("Margin of Error:",margin)
+
+# =====================================================
+# DAY 6 : REGRESSION ANALYSIS
+# =====================================================
+
+print("\n==============================")
+print("LINEAR REGRESSION")
+print("==============================")
+
+X = df[["Marketing_Spend"]]
+
+y = df["Sales"]
+
+model = LinearRegression()
+
+model.fit(X,y)
+
+prediction = model.predict(X)
+
+r2 = r2_score(y,prediction)
+
+print("Intercept:",model.intercept_)
+print("Slope:",model.coef_[0])
+print("R Squared:",r2)
+
+plt.figure(figsize=(6,4))
+plt.scatter(df["Marketing_Spend"],df["Sales"],label="Actual")
+plt.plot(df["Marketing_Spend"],prediction,label="Regression Line")
+plt.title("Marketing Spend vs Sales")
+plt.xlabel("Marketing Spend")
+plt.ylabel("Sales")
+plt.legend()
+plt.show()
+
+# =====================================================
+# DAY 7 : BUSINESS INSIGHTS
+# =====================================================
+
+print("\n===================================")
+print("STATISTICAL ANALYSIS REPORT")
+print("===================================")
+
+print(f"Average Sales : {mean:.2f}")
+
+print(f"95% Confidence Interval : ({ci[0]:.2f}, {ci[1]:.2f})")
+
+print(f"Margin of Error : {margin:.2f}")
+
+print(f"Correlation : {pearson[0]:.2f}")
+
+if pearson[1] < 0.05:
+    print("Marketing significantly affects Sales")
+else:
+    print("No significant relationship found")
+
+print(f"Regression R² : {r2:.2f}")
+
+print("\nBusiness Recommendations")
+
+if pearson[0] > 0.7:
+    print("- Increase marketing investment for higher revenue.")
+
+if r2 > 0.70:
+    print("- Marketing spend strongly predicts sales.")
+
+if anova.pvalue < 0.05:
+    print("- Regional sales differ significantly. Focus on top-performing regions.")
+else:
+    print("- Sales performance is consistent across regions.")
+
+print("- Monitor profit and marketing together for better ROI.")
