@@ -1,0 +1,7 @@
+Dataset Format( sales_data.csv)
+  Date,Sales,Marketing_Spend,Region,Profit
+2025-01-01,42000,12000,North,8000
+2025-01-02,45000,13000,South,8500
+2025-01-03,48000,14000,East,9000
+2025-01-04,51000,15000,West,9800
+2025-01-05,47000,13500,North,8700
